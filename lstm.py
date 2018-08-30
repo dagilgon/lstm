@@ -10,7 +10,10 @@ from keras.models import Sequential
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #Hide messy TensorFlow warnings
 warnings.filterwarnings("ignore") #Hide messy Numpy warnings
 
+seq = 0
+
 def load_data(filename, seq_len, normalise_window):
+    seq = seq_len
     f = open(filename, 'rb').read()
     data = f.decode().split('\n')
 
@@ -21,14 +24,17 @@ def load_data(filename, seq_len, normalise_window):
     
     if normalise_window:
         result = normalise_windows(result)
-
+    else:
+        result = no_normalise_windows(result)
     result = np.array(result)
 
-    row = round(0.9 * result.shape[0])
+    row = round(0.5 * result.shape[0])
     train = result[:int(row), :]
     np.random.shuffle(train)
-    x_train = train[:, :-1]
-    y_train = train[:, -1]
+    x_train = train[:int(row), :-1]
+    y_train = train[:int(row), -1]
+    #x_train = train[:, :-1]
+    #y_train = train[:, -1]
     x_test = result[int(row):, :-1]
     y_test = result[int(row):, -1]
 
@@ -40,9 +46,45 @@ def load_data(filename, seq_len, normalise_window):
 def normalise_windows(window_data):
     normalised_data = []
     for window in window_data:
-        normalised_window = [((float(p) / float(window[0])) - 1) for p in window]
-        normalised_data.append(normalised_window)
+        #print(window)
+        try:
+          normalised_window = [((float(p) / float(window[0])) - 1) for p in window]
+          #normalised_window = [((float(p) - float(window[0]))) for p in window]
+          normalised_data.append(normalised_window)
+        except ValueError:
+          print("error")
     return normalised_data
+
+def no_normalise_windows(window_data):
+    normalised_data = []
+    for window in window_data:
+        #print(window)
+        try:
+          normalised_window = [float(p) for p in window]
+          normalised_data.append(normalised_window)
+        except ValueError:
+          print("error")
+    return normalised_data
+
+def unnormalise_windows(window_data):
+
+    print(window_data)
+    sequence_length = seq + 1
+    result = []
+    for index in range(len(window_data) - sequence_length):
+        result.append(window_data[index: index + sequence_length])
+
+    normalised_data = []
+    for window in result:
+        #print(window)
+        try:
+          normalised_window = [(((p+1) * window[0])) for p in np.nditer(window)]
+          normalised_data.append(normalised_window)
+        except ValueError:
+          print("error")
+    print(normalised_data)	
+    return normalised_data
+
 
 def build_model(layers):
     model = Sequential()
@@ -67,9 +109,11 @@ def build_model(layers):
     print("> Compilation Time : ", time.time() - start)
     return model
 
-def predict_point_by_point(model, data):
+def predict_point_by_point(model,X_test,Y_test,batch_size):
     #Predict each timestep given the last sequence of true data, in effect only predicting 1 step ahead each time
-    predicted = model.predict(data)
+    predicted = model.predict(X_test)
+    #scores = model.evaluate(X_test, Y_test, batch_size=batch_size)
+    #print(scores)
     predicted = np.reshape(predicted, (predicted.size,))
     return predicted
 
@@ -83,15 +127,19 @@ def predict_sequence_full(model, data, window_size):
         curr_frame = np.insert(curr_frame, [window_size-1], predicted[-1], axis=0)
     return predicted
 
+
 def predict_sequences_multiple(model, data, window_size, prediction_len):
     #Predict sequence of 50 steps before shifting prediction run forward by 50 steps
     prediction_seqs = []
+    full_predictions = []
     for i in range(int(len(data)/prediction_len)):
         curr_frame = data[i*prediction_len]
         predicted = []
         for j in range(prediction_len):
-            predicted.append(model.predict(curr_frame[newaxis,:,:])[0,0])
+            valor = model.predict(curr_frame[newaxis,:,:])[0,0]
+            predicted.append(valor)
+            full_predictions.append(valor)
             curr_frame = curr_frame[1:]
             curr_frame = np.insert(curr_frame, [window_size-1], predicted[-1], axis=0)
         prediction_seqs.append(predicted)
-    return prediction_seqs
+    return prediction_seqs,full_predictions
