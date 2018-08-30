@@ -3,9 +3,13 @@ lstm tensorflow python flask docker kubernetes
 
 
 sudo docker build -t lstm:latest .
+
 sudo docker images | grep lstm
+
 sudo docker tag xxx dagilgon/lstm:latest
+
 sudo docker login
+
 sudo docker push dagilgon/lstm:latest
 
 
@@ -26,15 +30,21 @@ service -> service.yaml
 deployment -> deployment.yaml
 
 #pod kmaster
+
 kubectl create -f pod.yaml
+
 kubectl get pod lstm
 
 #pod local
+
 kubectl --kubeconfig ~/kubernetes/admin.conf create -f pod.yaml
+
 kubectl --kubeconfig ~/kubernetes/admin.conf  get pod lstm
 
 #service local
+
 kubectl --kubeconfig ~/kubernetes/admin.conf create -f service.yaml
 
 #deployment local
+
 kubectl --kubeconfig ~/kubernetes/admin.conf apply -f sa-frontend-deployment.yaml
