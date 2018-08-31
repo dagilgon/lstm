@@ -47,4 +47,4 @@ kubectl --kubeconfig ~/kubernetes/admin.conf create -f service.yaml
 
 #deployment local
 
-kubectl --kubeconfig ~/kubernetes/admin.conf apply -f sa-frontend-deployment.yaml
+kubectl --kubeconfig ~/kubernetes/admin.conf apply -f deployment.yaml
